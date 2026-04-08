@@ -1,0 +1,155 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+  --elysian-emerald: #10b981;
+  --forest-glow: #065f46;
+}
+
+html,
+body {
+  min-height: 100%;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: var(--font-jakarta), sans-serif;
+  background: #09090b;
+  color: #f4f4f5;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.12;
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.08) 0.5px, transparent 0.5px);
+  background-size: 3px 3px;
+  mix-blend-mode: soft-light;
+  animation: grain-shift 7s steps(10) infinite;
+}
+
+code,
+pre,
+.font-mono {
+  font-family: var(--font-jetbrains), monospace;
+}
+
+::selection {
+  background: rgba(16, 185, 129, 0.25);
+  color: #ecfdf5;
+}
+
+@keyframes pulse-border {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.2), 0 0 24px rgba(16, 185, 129, 0.08);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(16, 185, 129, 0.35), 0 0 36px rgba(16, 185, 129, 0.18);
+  }
+}
+
+@keyframes grain-shift {
+  0% {
+    transform: translate(0, 0);
+  }
+  25% {
+    transform: translate(-2%, 1%);
+  }
+  50% {
+    transform: translate(1%, -1%);
+  }
+  75% {
+    transform: translate(2%, 2%);
+  }
+  100% {
+    transform: translate(0, 0);
+  }
+}
+
+@keyframes icon-pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.9;
+  }
+  50% {
+    transform: scale(1.12);
+    opacity: 1;
+  }
+}
+
+@keyframes aurora-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translate3d(14px, -12px, 0) scale(1.08);
+    opacity: 0.85;
+  }
+}
+
+@keyframes aurora-drift-reverse {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.45;
+  }
+  50% {
+    transform: translate3d(-16px, 8px, 0) scale(1.06);
+    opacity: 0.75;
+  }
+}
+
+.glow-shell {
+  animation: pulse-border 4s ease-in-out infinite;
+}
+
+.glass-panel {
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: rgba(7, 14, 12, 0.48);
+  backdrop-filter: blur(18px);
+  transition: border-color 280ms ease, box-shadow 280ms ease, transform 280ms ease;
+}
+
+.glass-panel:hover {
+  border-color: rgba(16, 185, 129, 0.42);
+  box-shadow: 0 0 30px rgba(16, 185, 129, 0.12);
+}
+
+.icon-pulse {
+  animation: icon-pulse 0.9s ease-in-out;
+}
+
+.grid-atmosphere {
+  background-size: 38px 38px;
+  background-position: center;
+}
+
+.aurora-orb {
+  animation: aurora-drift 8s ease-in-out infinite;
+}
+
+.aurora-orb-reverse {
+  animation: aurora-drift-reverse 9s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  * {
+    animation: none !important;
+    transition: none !important;
+  }
+}
