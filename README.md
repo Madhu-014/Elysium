@@ -347,6 +347,14 @@ This path is no-cost on starter/free tiers and is beginner-friendly.
 6. Verify backend:
   - `GET /health` returns `{"status":"ok"...}`.
 
+Render build troubleshooting:
+
+1. If Render selects Python 3.14 and build hangs on compiling dependencies, set Python to `3.11.9`.
+2. Add environment variable in Render service:
+  - `PYTHON_VERSION=3.11.9`
+3. Click `Manual Deploy` -> `Clear build cache & deploy`.
+4. This repository already includes `backend/.python-version` set to `3.11.9`.
+
 ### C. Deploy frontend on Vercel (free)
 
 1. In Vercel, `Add New Project` and import this repository.
