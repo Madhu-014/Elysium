@@ -9,7 +9,7 @@ client = TestClient(app)
 def test_optimize_works_without_api_key_when_auth_disabled() -> None:
     response = client.post(
         "/optimize",
-        json={"prompt": "Please summarize this content clearly.", "mode": "eco"},
+        json={"prompt": "Please summarize this content clearly.", "mode": "eco-max"},
     )
 
     assert response.status_code == 200

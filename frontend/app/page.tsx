@@ -9,14 +9,15 @@ import ApiCodeBlock from "../components/ApiCodeBlock";
 import Playground from "../components/Playground";
 
 type Tab = "python" | "javascript";
+type AgentTab = "langchain" | "llamaindex";
 
 const headlineWords = ["Elysium:", "The", "Pure", "State", "of", "Inference"];
 const sectionLinks = [
   { href: "#top", label: "Home" },
+  { href: "#mission", label: "Mission" },
   { href: "#playground", label: "Playground" },
   { href: "#integration", label: "Integration" },
-  { href: "#impact", label: "Impact" },
-  { href: "#math", label: "Math" },
+  { href: "#benchmarks", label: "Benchmarks" },
 ];
 
 const fadeUp = {
@@ -39,6 +40,10 @@ const cardStagger = {
 const pythonSnippet = `from openai import OpenAI\n\nclient = OpenAI(\n    api_key="YOUR_KEY",\n    base_url="https://api.elysium.tech/v1"\n)\n\nres = client.responses.create(\n    model="gpt-4o-mini",\n    input="Summarize this architecture doc..."\n)\nprint(res.output_text)`;
 
 const jsSnippet = `import OpenAI from "openai";\n\nconst client = new OpenAI({\n  apiKey: process.env.ELYSIUM_API_KEY,\n  baseURL: "https://api.elysium.tech/v1",\n});\n\nconst res = await client.responses.create({\n  model: "gpt-4o-mini",\n  input: "Summarize this architecture doc...",\n});\n\nconsole.log(res.output_text);`;
+
+const langchainSnippet = `from langchain_openai import ChatOpenAI\n\n# Elysium acts as a transparent proxy for agent loops\nllm = ChatOpenAI(\n    api_key="OPENAI_API_KEY",\n    base_url="https://api.elysium.tech/v1",\n    model="gpt-4o-mini",\n    default_headers={"X-Elysium-Mode": "optimal"}\n)\n\nresponse = llm.invoke("Optimize my agent workflow.")\nprint(response.content)`;
+
+const llamaIndexSnippet = `from llama_index.llms.openai import OpenAI\n\n# Cut token waste across entire RAG pipelines instantly\nllm = OpenAI(\n    api_key="OPENAI_API_KEY",\n    api_base="https://api.elysium.tech/v1",\n    model="gpt-4o-mini",\n    additional_kwargs={"headers": {"X-Elysium-Mode": "optimal"}}\n)\n\nresponse = llm.complete("Explain semantic caching.")\nprint(response.text)`;
 
 function FloatingParticles() {
   const particles = Array.from({ length: 16 }, (_, idx) => idx);
@@ -82,6 +87,9 @@ function FloatingParticles() {
 
 export default function Page() {
   const [activeTab, setActiveTab] = useState<Tab>("python");
+  const [activeAgentTab, setActiveAgentTab] = useState<AgentTab>("langchain");
+
+  
   const { scrollYProgress } = useScroll();
   const progressScaleX = useSpring(scrollYProgress, {
     stiffness: 120,
@@ -93,18 +101,16 @@ export default function Page() {
     return activeTab === "python" ? pythonSnippet : jsSnippet;
   }, [activeTab]);
 
+  const agentCode = useMemo(() => {
+    return activeAgentTab === "langchain" ? langchainSnippet : llamaIndexSnippet;
+  }, [activeAgentTab]);
+
   useEffect(() => {
     const navEntry = performance.getEntriesByType("navigation")[0] as PerformanceNavigationTiming | undefined;
-    if (!navEntry || navEntry.type !== "reload") {
-      return;
+    if (navEntry && navEntry.type === "reload" && window.location.hash) {
+      window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+      window.scrollTo({ top: 0, behavior: "auto" });
     }
-
-    if (!window.location.hash) {
-      return;
-    }
-
-    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
-    window.scrollTo({ top: 0, behavior: "auto" });
   }, []);
 
   return (
@@ -117,9 +123,17 @@ export default function Page() {
       <FloatingParticles />
       <div className="pointer-events-none absolute inset-0">
         <div className="grid-atmosphere absolute inset-0 bg-tech-grid opacity-[0.08]" />
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_5%,rgba(16,185,129,0.22),transparent_38%),radial-gradient(circle_at_88%_15%,rgba(6,95,70,0.24),transparent_34%),radial-gradient(circle_at_50%_120%,rgba(16,185,129,0.08),transparent_40%)]" />
-        <div className="aurora-orb absolute -right-20 top-24 h-72 w-72 rounded-full bg-emerald-500/20 blur-3xl" />
-        <div className="aurora-orb-reverse absolute -left-20 bottom-24 h-72 w-72 rounded-full bg-emerald-800/20 blur-3xl" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_12%_5%,rgba(16,185,129,0.22),transparent_38%),radial-gradient(circle_at_88%_15%,rgba(6,182,212,0.18),transparent_34%),radial-gradient(circle_at_50%_120%,rgba(16,185,129,0.15),transparent_40%)]" />
+        <motion.div 
+          animate={{ opacity: [0.5, 0.8, 0.5], scale: [1, 1.05, 1] }}
+          transition={{ duration: 8, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+          className="aurora-orb absolute -right-20 top-24 h-[400px] w-[400px] rounded-full bg-emerald-500/20 blur-[100px]" 
+        />
+        <motion.div 
+          animate={{ opacity: [0.4, 0.7, 0.4], scale: [1, 1.08, 1] }}
+          transition={{ duration: 10, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut", delay: 1 }}
+          className="aurora-orb-reverse absolute -left-20 bottom-24 h-[350px] w-[350px] rounded-full bg-cyan-600/20 blur-[90px]" 
+        />
       </div>
 
       <header className="sticky top-3 z-40 mx-auto w-full max-w-6xl px-6">
@@ -129,21 +143,21 @@ export default function Page() {
           transition={{ duration: 0.45, ease: "easeOut" }}
           className="glass-panel flex items-center justify-between rounded-2xl px-4 py-3 sm:px-5"
         >
-          <Link
+          <a
             href="#top"
             className="px-2 text-sm font-semibold uppercase tracking-[0.16em] text-emerald-300 transition-colors duration-300 hover:text-emerald-200"
           >
             Elysium
-          </Link>
+          </a>
           <div className="flex items-center gap-2 sm:gap-3">
             {sectionLinks.map((item) => (
-              <Link
+              <a
                 key={item.href}
                 href={item.href}
                 className="rounded-lg px-3 py-2 text-xs font-medium text-zinc-200 transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-500/10 hover:text-emerald-200 sm:text-sm"
               >
                 {item.label}
-              </Link>
+              </a>
             ))}
           </div>
         </motion.nav>
@@ -178,7 +192,7 @@ export default function Page() {
                 visible: { opacity: 1, y: 0 },
               }}
               transition={{ duration: 0.45, ease: "easeOut" }}
-              className="mr-3 inline-block"
+              className={`mr-3 inline-block ${word === "Elysium:" ? "text-gradient" : ""}`}
             >
               {word}
             </motion.span>
@@ -199,21 +213,21 @@ export default function Page() {
           initial={{ opacity: 0, y: 18 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.15, ease: "easeOut" }}
-          className="mt-10 flex flex-col gap-3 sm:flex-row"
+          className="mt-10 flex flex-col gap-4 sm:flex-row sm:items-center"
         >
-          <Link
+          <a
             href="#playground"
-            className="inline-flex items-center justify-center rounded-lg bg-emerald-500 px-5 py-3 text-sm font-medium text-zinc-950 shadow-glow transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-400"
+            className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-emerald-400 to-emerald-600 px-7 py-3.5 text-sm font-bold tracking-wide text-zinc-950 shadow-[0_0_24px_rgba(16,185,129,0.35)] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_0_36px_rgba(16,185,129,0.5)]"
           >
             Try the API (Free)
             <ArrowRight className="ml-2 h-4 w-4" />
-          </Link>
-          <Link
-            href="#math"
-            className="inline-flex items-center justify-center rounded-lg border border-zinc-700 bg-zinc-900 px-5 py-3 text-sm font-medium text-zinc-100 transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-500/40 hover:text-emerald-200"
+          </a>
+          <a
+            href="#benchmarks"
+            className="inline-flex items-center justify-center rounded-xl border border-zinc-700 bg-zinc-900/50 px-7 py-3.5 text-sm font-medium text-zinc-100 transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-500/40 hover:bg-zinc-800 hover:text-emerald-200"
           >
-            View the Math
-          </Link>
+            View Benchmarks
+          </a>
         </motion.div>
 
         <motion.div
@@ -383,10 +397,52 @@ export default function Page() {
         </div>
       </section>
 
-      <section id="impact" className="relative mx-auto mb-24 mt-24 max-w-6xl px-6">
+      <section id="agents" className="relative mx-auto mt-24 max-w-6xl px-6">
+        <motion.div {...fadeUp} className="mb-6 flex items-center gap-2 text-sm text-emerald-300/80">
+          <BadgeCheck className="h-4 w-4" />
+          Agent Framework Integration
+        </motion.div>
+
+        <div className="glow-shell overflow-hidden rounded-2xl border border-white/10 bg-zinc-950/90">
+          <div className="flex items-center gap-2 border-b border-white/10 p-2">
+            <button
+              type="button"
+              onClick={() => setActiveAgentTab("langchain")}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                activeAgentTab === "langchain"
+                  ? "bg-emerald-500/20 text-emerald-300"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              LangChain
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveAgentTab("llamaindex")}
+              className={`rounded-md px-3 py-1.5 text-xs font-medium transition ${
+                activeAgentTab === "llamaindex"
+                  ? "bg-emerald-500/20 text-emerald-300"
+                  : "text-zinc-400 hover:text-zinc-200"
+              }`}
+            >
+              LlamaIndex
+            </button>
+          </div>
+
+          <div className="border-b border-emerald-500/20 bg-emerald-500/8 px-4 py-2 text-xs text-emerald-200">
+            Proxy agent loops transparently with the <span className="font-mono">POST /v1/chat/completions</span> endpoint.
+          </div>
+
+          <div className="p-4">
+            <ApiCodeBlock code={agentCode} label="Agent Frameworks" />
+          </div>
+        </div>
+      </section>
+
+      <section id="benchmarks" className="relative mx-auto mb-24 mt-24 max-w-6xl px-6">
         <motion.div {...fadeUp} className="mb-6 flex items-center gap-2 text-sm text-emerald-300/80">
           <LineChart className="h-4 w-4" />
-          Impact Dashboard
+          Algorithm Performance
         </motion.div>
 
         <motion.div
@@ -396,27 +452,23 @@ export default function Page() {
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-zinc-900 via-zinc-950 to-black p-8 shadow-[0_0_56px_rgba(16,185,129,0.18)]"
         >
-          <div id="math" className="mb-5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-xs text-emerald-200">
-            Estimation model: energy saved (kWh) = (tokens saved / 1000) x kWh per 1k tokens,
-            and CO2 saved (g) = energy saved x grid carbon intensity.
+          <div className="mb-5 rounded-xl border border-white/10 bg-black/30 p-4 text-xs leading-relaxed text-zinc-300">
+            Elysium&apos;s multi-stage pipeline (Deduplication → Relevance Filtering → Syntactic Compression) achieves 
+            substantial token savings without sacrificing the LLM&apos;s ability to reason, tested across a wide array of benchmark prompts.
           </div>
-          <div className="mb-5 rounded-xl border border-white/10 bg-black/30 p-4 text-xs text-zinc-300">
-            Long-run view: if a platform processes 100M requests/day and Elysium removes even 15%
-            token overhead, yearly avoided compute and emissions become material at infrastructure scale.
-          </div>
-          <p className="text-xs uppercase tracking-[0.18em] text-zinc-400">Global Live Impact</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-zinc-400">Core Engine Benchmarks</p>
           <div className="mt-6 grid gap-4 sm:grid-cols-3">
-            <div className="rounded-xl border border-white/10 bg-black/40 p-4">
-              <p className="text-2xl font-semibold text-white">14.2M</p>
-              <p className="mt-1 text-xs text-zinc-400">Tokens Saved</p>
+            <div className="rounded-xl border border-white/10 bg-black/40 p-6 transition-colors duration-500 hover:border-emerald-500/30">
+              <p className="text-4xl font-semibold text-white">58.4%</p>
+              <p className="mt-2 text-xs font-medium text-emerald-400">Avg. Token Reduction</p>
             </div>
-            <div className="rounded-xl border border-white/10 bg-black/40 p-4">
-              <p className="text-2xl font-semibold text-white">4.2 Tons</p>
-              <p className="mt-1 text-xs text-zinc-400">CO2 Prevented</p>
+            <div className="rounded-xl border border-white/10 bg-black/40 p-6 transition-colors duration-500 hover:border-emerald-500/30">
+              <p className="text-4xl font-semibold text-white">94.8%</p>
+              <p className="mt-2 text-xs font-medium text-emerald-400">Semantic Preservation</p>
             </div>
-            <div className="rounded-xl border border-white/10 bg-black/40 p-4">
-              <p className="text-2xl font-semibold text-white">1,200</p>
-              <p className="mt-1 text-xs text-zinc-400">Trees Equivalent</p>
+            <div className="rounded-xl border border-white/10 bg-black/40 p-6 transition-colors duration-500 hover:border-emerald-500/30">
+              <p className="text-4xl font-semibold text-white">&lt; 25<span className="text-2xl">ms</span></p>
+              <p className="mt-2 text-xs font-medium text-emerald-400">Cache Hit Latency</p>
             </div>
           </div>
         </motion.div>
@@ -437,24 +489,24 @@ export default function Page() {
               Elysium turns every prompt into an efficiency decision that compounds into measurable climate and cost outcomes.
             </h3>
             <div className="mt-5 flex flex-wrap gap-3">
-              <Link
+              <a
                 href="#playground"
                 className="inline-flex items-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-zinc-950 transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-400"
               >
                 Launch Live Optimization
-              </Link>
-              <Link
+              </a>
+              <a
                 href="#impact"
                 className="inline-flex items-center rounded-lg border border-emerald-500/30 bg-black/30 px-4 py-2 text-sm text-emerald-200 transition-all duration-300 hover:-translate-y-0.5 hover:bg-emerald-500/10"
               >
                 Explore Impact Model
-              </Link>
-              <Link
+              </a>
+              <a
                 href="#top"
                 className="inline-flex items-center rounded-lg border border-white/15 bg-black/30 px-4 py-2 text-sm text-zinc-200 transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-500/30"
               >
                 Back to Top
-              </Link>
+              </a>
             </div>
           </div>
         </motion.div>
@@ -499,12 +551,12 @@ export default function Page() {
 
             <div>
               <p className="text-xs uppercase tracking-[0.15em] text-emerald-300/80">Contact</p>
-              <a
-                href="mailto:madhusudhanchandar@gmail.com"
-                className="mt-3 inline-flex items-center gap-2 rounded-lg border border-white/10 bg-black/30 px-3 py-2 text-xs transition-all duration-300 hover:-translate-y-0.5 hover:border-emerald-500/40 hover:text-emerald-300"
+              <Link
+                href="mailto:madhusudhan.chandar@gmail.com"
+                className="mt-3 inline-flex items-center gap-2 rounded-lg bg-emerald-500/10 px-4 py-2 text-sm font-medium text-emerald-300 transition-colors hover:bg-emerald-500/20"
               >
-                <Mail className="h-3.5 w-3.5" /> madhusudhanchandar@gmail.com
-              </a>
+                <Mail className="h-3.5 w-3.5" /> madhusudhan.chandar@gmail.com
+              </Link>
             </div>
           </div>
 

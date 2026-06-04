@@ -3,12 +3,12 @@ from typing import Literal
 from pydantic import BaseModel, Field
 
 
-Mode = Literal["eco", "balanced", "high_quality"]
+Mode = Literal["eco-max", "optimal", "precision"]
 
 
 class OptimizeRequest(BaseModel):
     prompt: str = Field(min_length=1, max_length=60000)
-    mode: Mode = "balanced"
+    mode: Mode = "optimal"
     max_output_tokens: int | None = Field(default=None, ge=1, le=32000)
 
 

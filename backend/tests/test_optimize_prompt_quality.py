@@ -28,7 +28,7 @@ To recap:
     response = client.post(
         "/optimize",
         headers={"X-API-Key": "dev-key-123"},
-        json={"prompt": prompt, "mode": "eco"},
+        json={"prompt": prompt, "mode": "eco-max"},
     )
 
     assert response.status_code == 200
@@ -75,9 +75,9 @@ Thank you very much for your help with this task.
         assert response.status_code == 200
         return response.json()
 
-    eco = call("eco")
-    balanced = call("balanced")
-    high_quality = call("high_quality")
+    eco = call("eco-max")
+    balanced = call("optimal")
+    high_quality = call("precision")
 
     assert eco["token_reduction_pct"] >= balanced["token_reduction_pct"]
     assert balanced["token_reduction_pct"] >= high_quality["token_reduction_pct"]
@@ -134,9 +134,9 @@ def test_all_modes_across_prompt_patterns(prompt: str, required_terms: list[str]
         assert response.status_code == 200
         return response.json()
 
-    eco = call("eco")
-    balanced = call("balanced")
-    high_quality = call("high_quality")
+    eco = call("eco-max")
+    balanced = call("optimal")
+    high_quality = call("precision")
 
     # Mode ordering: eco should be most aggressive, high_quality least aggressive.
     assert eco["tokens_after"] <= balanced["tokens_after"]
@@ -170,12 +170,12 @@ To recap:
     balanced = client.post(
         "/optimize",
         headers={"X-API-Key": "dev-key-123"},
-        json={"prompt": prompt, "mode": "balanced"},
+        json={"prompt": prompt, "mode": "optimal"},
     ).json()
     high_quality = client.post(
         "/optimize",
         headers={"X-API-Key": "dev-key-123"},
-        json={"prompt": prompt, "mode": "high_quality"},
+        json={"prompt": prompt, "mode": "precision"},
     ).json()
 
     assert high_quality["tokens_after"] >= balanced["tokens_after"]
@@ -193,17 +193,17 @@ Need an executive summary for AI in renewable energy.
     eco = client.post(
         "/optimize",
         headers={"X-API-Key": "dev-key-123"},
-        json={"prompt": prompt, "mode": "eco"},
+        json={"prompt": prompt, "mode": "eco-max"},
     ).json()
     balanced = client.post(
         "/optimize",
         headers={"X-API-Key": "dev-key-123"},
-        json={"prompt": prompt, "mode": "balanced"},
+        json={"prompt": prompt, "mode": "optimal"},
     ).json()
     high_quality = client.post(
         "/optimize",
         headers={"X-API-Key": "dev-key-123"},
-        json={"prompt": prompt, "mode": "high_quality"},
+        json={"prompt": prompt, "mode": "precision"},
     ).json()
 
     assert eco["tokens_after"] <= balanced["tokens_after"]
@@ -230,7 +230,7 @@ Do not add filler content.
         "company",
     ]
 
-    for mode in ("eco", "balanced", "high_quality"):
+    for mode in ("eco-max", "optimal", "precision"):
         response = client.post(
             "/optimize",
             headers={"X-API-Key": "dev-key-123"},
@@ -256,7 +256,7 @@ Thank you very much.
     response = client.post(
         "/optimize",
         headers={"X-API-Key": "dev-key-123"},
-        json={"prompt": prompt, "mode": "high_quality"},
+        json={"prompt": prompt, "mode": "precision"},
     )
     assert response.status_code == 200
     data = response.json()

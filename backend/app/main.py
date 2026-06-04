@@ -6,6 +6,11 @@ from app.config import settings
 
 app = FastAPI(title="Elysium", version="0.1.0")
 
+from app.db import Base, engine
+from app.db_models import UsageRecord, PromptCache
+
+Base.metadata.create_all(bind=engine)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.allowed_origins,

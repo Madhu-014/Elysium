@@ -16,9 +16,9 @@ def test_ip_rate_limit_blocks_excess_requests() -> None:
     clear_rate_limit_state()
 
     try:
-        one = client.post("/optimize", json={"prompt": "p1", "mode": "eco"})
-        two = client.post("/optimize", json={"prompt": "p2", "mode": "eco"})
-        three = client.post("/optimize", json={"prompt": "p3", "mode": "eco"})
+        one = client.post("/optimize", json={"prompt": "p1", "mode": "eco-max"})
+        two = client.post("/optimize", json={"prompt": "p2", "mode": "eco-max"})
+        three = client.post("/optimize", json={"prompt": "p3", "mode": "eco-max"})
 
         assert one.status_code == 200
         assert two.status_code == 200

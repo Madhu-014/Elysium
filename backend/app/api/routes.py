@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, Request
-
+from fastapi import APIRouter, Depends, Request, HTTPException
+import httpx
 from app.auth import require_api_key
 from app.models import OptimizeRequest, OptimizeResponse, SustainabilityMetrics, UsageResponse
 from app.services.carbon import estimate_co2_saved_g, estimate_energy_saved_kwh
@@ -9,7 +9,8 @@ from app.services.quality_guard import pick_context_safe_output
 from app.services.rate_limiter import enforce_ip_rate_limit
 from app.services.relevance import filter_relevant_sentences
 from app.services.tokenizer import count_tokens
-from app.services.usage_store import record_usage, usage_totals
+from app.services.usage_store import record_usage, get_usage_totals
+from app.services.cache import get_cached_prompt, cache_prompt
 
 router = APIRouter()
 
@@ -34,14 +35,38 @@ def optimize(
     source = payload.prompt.strip()
     tokens_before = count_tokens(source)
 
+    cached = get_cached_prompt(source, payload.mode)
+    if cached:
+        optimized = cached["optimized_prompt"]
+        tokens_after = cached["tokens_after"]
+        reduction_pct = 0.0
+        if tokens_before > 0:
+            reduction_pct = ((tokens_before - tokens_after) / tokens_before) * 100
+            reduction_pct = max(round(reduction_pct, 2), 0.0)
+
+        energy_saved_kwh = round(estimate_energy_saved_kwh(tokens_before, tokens_after), 8)
+        co2_saved_g = round(estimate_co2_saved_g(energy_saved_kwh), 6)
+        record_usage(tokens_before, tokens_after, energy_saved_kwh, co2_saved_g)
+
+        return OptimizeResponse(
+            optimized_prompt=optimized,
+            tokens_before=tokens_before,
+            tokens_after=tokens_after,
+            token_reduction_pct=reduction_pct,
+            sustainability=SustainabilityMetrics(
+                energy_saved_kwh=energy_saved_kwh,
+                co2_saved_g=co2_saved_g,
+            ),
+        )
+
     stage_1 = deduplicate_lines(source, payload.mode)
     stage_2 = filter_relevant_sentences(stage_1, payload.mode)
     stage_3 = compress_prompt(stage_2, payload.mode)
 
     candidate_order = {
-        "eco": [stage_3, stage_2, stage_1, source],
-        "balanced": [stage_2, stage_3, stage_1, source],
-        "high_quality": [stage_1, stage_2, stage_3, source],
+        "eco-max": [stage_3, stage_2, stage_1, source],
+        "optimal": [stage_2, stage_3, stage_1, source],
+        "precision": [stage_1, stage_2, stage_3, source],
     }[payload.mode]
 
     optimized = pick_context_safe_output(
@@ -66,6 +91,14 @@ def optimize(
         co2_saved_g=co2_saved_g,
     )
 
+    cache_prompt(
+        prompt=source,
+        mode=payload.mode,
+        optimized_prompt=optimized,
+        tokens_before=tokens_before,
+        tokens_after=tokens_after
+    )
+
     return OptimizeResponse(
         optimized_prompt=optimized,
         tokens_before=tokens_before,
@@ -82,7 +115,10 @@ def optimize(
 def usage(request: Request, _api_key: str = Depends(require_api_key)) -> UsageResponse:
     enforce_ip_rate_limit(request)
 
+    usage_totals = get_usage_totals()
+    
     saved_tokens = usage_totals.total_tokens_before - usage_totals.total_tokens_after
+    
     return UsageResponse(
         total_requests=usage_totals.total_requests,
         total_tokens_before=usage_totals.total_tokens_before,
@@ -91,3 +127,72 @@ def usage(request: Request, _api_key: str = Depends(require_api_key)) -> UsageRe
         total_energy_saved_kwh=round(usage_totals.total_energy_saved_kwh, 8),
         total_co2_saved_g=round(usage_totals.total_co2_saved_g, 6),
     )
+
+
+@router.post("/v1/chat/completions")
+async def chat_completions(request: Request):
+    enforce_ip_rate_limit(request)
+    
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise HTTPException(status_code=401, detail="Missing Authorization header")
+        
+    try:
+        payload = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON payload")
+        
+    messages = payload.get("messages", [])
+    if not messages:
+        raise HTTPException(status_code=400, detail="Missing messages array")
+        
+    # Find the last user message to optimize
+    last_user_idx = -1
+    for i in range(len(messages) - 1, -1, -1):
+        if messages[i].get("role") == "user":
+            last_user_idx = i
+            break
+            
+    if last_user_idx != -1:
+        source_text = messages[last_user_idx].get("content", "")
+        if isinstance(source_text, str) and source_text.strip():
+            mode = request.headers.get("X-Elysium-Mode", "optimal")
+            tokens_before = count_tokens(source_text)
+            
+            cached = get_cached_prompt(source_text, mode)
+            if cached:
+                optimized = cached["optimized_prompt"]
+                tokens_after = cached["tokens_after"]
+            else:
+                stage_1 = deduplicate_lines(source_text, mode)
+                stage_2 = filter_relevant_sentences(stage_1, mode)
+                optimized = compress_prompt(stage_2, mode)
+                tokens_after = count_tokens(optimized)
+                cache_prompt(source_text, mode, optimized, tokens_before, tokens_after)
+                
+            messages[last_user_idx]["content"] = optimized
+            payload["messages"] = messages
+            
+            energy_saved = round(estimate_energy_saved_kwh(tokens_before, tokens_after), 8)
+            co2_saved = round(estimate_co2_saved_g(energy_saved), 6)
+            record_usage(tokens_before, tokens_after, energy_saved, co2_saved)
+            
+    # Forward to OpenAI
+    async with httpx.AsyncClient() as client:
+        try:
+            # We don't support streaming yet in this MVP
+            if payload.get("stream"):
+                payload["stream"] = False
+                
+            response = await client.post(
+                "https://api.openai.com/v1/chat/completions",
+                json=payload,
+                headers={"Authorization": auth_header, "Content-Type": "application/json"},
+                timeout=60.0
+            )
+            response.raise_for_status()
+            return response.json()
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(status_code=e.response.status_code, detail=e.response.text)
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))

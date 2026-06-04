@@ -43,15 +43,15 @@ REQUIREMENT_MARKERS = (
 )
 
 MIN_RETENTION_BY_MODE = {
-    "eco": 0.60,
-    "balanced": 0.72,
-    "high_quality": 0.88,
+    "eco-max": 0.35,
+    "optimal": 0.55,
+    "precision": 0.88,
 }
 
 MAX_REDUCTION_BY_MODE = {
-    "eco": 75.0,
-    "balanced": 60.0,
-    "high_quality": 35.0,
+    "eco-max": 85.0,
+    "optimal": 70.0,
+    "precision": 40.0,
 }
 
 

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { motion, animate } from "framer-motion";
 import { ArrowRightLeft, Leaf, Loader2, TreePine, Zap } from "lucide-react";
 
-type Mode = "eco" | "balanced" | "high_quality";
+type Mode = "eco-max" | "optimal" | "precision";
 
 type OptimizeResponse = {
   optimized_prompt: string;
@@ -139,7 +139,7 @@ function highlightTokens(text: string) {
 }
 
 export default function Playground() {
-  const [mode, setMode] = useState<Mode>("eco");
+  const [mode, setMode] = useState<Mode>("optimal");
   const [inputPrompt, setInputPrompt] = useState(defaultPrompt);
   const [result, setResult] = useState<OptimizeResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -246,7 +246,7 @@ export default function Playground() {
         className="glass-panel mb-4 flex flex-col gap-3 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between"
       >
         <div className="flex flex-wrap gap-2">
-          {(["eco", "balanced", "high_quality"] as Mode[]).map((candidateMode) => (
+          {(["eco-max", "optimal", "precision"] as Mode[]).map((candidateMode) => (
             <button
               type="button"
               key={candidateMode}
@@ -261,11 +261,15 @@ export default function Playground() {
             </button>
           ))}
         </div>
-        <button
+        <motion.button
           type="button"
           onClick={handleOptimize}
           disabled={isLoading || inputPrompt.trim().length === 0}
-          className="inline-flex items-center justify-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-zinc-950 shadow-glow transition-all duration-300 hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
+          animate={{ 
+            boxShadow: isLoading || inputPrompt.trim().length === 0 ? "none" : ["0 0 0px rgba(16,185,129,0)", "0 0 24px rgba(16,185,129,0.5)", "0 0 0px rgba(16,185,129,0)"] 
+          }}
+          transition={{ duration: 3, repeat: Number.POSITIVE_INFINITY, ease: "easeInOut" }}
+          className="inline-flex items-center justify-center rounded-lg bg-emerald-500 px-4 py-2 text-sm font-medium text-zinc-950 transition-all duration-300 hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {isLoading ? (
             <>
@@ -275,7 +279,7 @@ export default function Playground() {
           ) : (
             "Run Optimization"
           )}
-        </button>
+        </motion.button>
       </motion.div>
 
       <motion.div
@@ -289,7 +293,7 @@ export default function Playground() {
           <p className="uppercase tracking-[0.16em] text-emerald-300/80">Input</p>
           <p className="mt-2 font-mono text-zinc-200">POST /optimize</p>
           <p className="mt-1">Body:</p>
-          <p className="mt-1 font-mono text-[11px] text-zinc-400">{"{ prompt: string, mode: \"eco\"|\"balanced\"|\"high_quality\" }"}</p>
+          <p className="mt-1 font-mono text-[11px] text-zinc-400">{"{ prompt: string, mode: \"eco-max\"|\"optimal\"|\"precision\" }"}</p>
         </div>
         <div className="rounded-xl border border-emerald-500/20 bg-black/25 p-3 text-xs text-zinc-300">
           <p className="uppercase tracking-[0.16em] text-emerald-300/80">Output</p>
@@ -361,6 +365,7 @@ export default function Playground() {
       </motion.div>
 
       <motion.div
+        id="impact"
         initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, amount: 0.3 }}
